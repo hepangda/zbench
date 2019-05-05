@@ -39,6 +39,13 @@ struct HttpTrace {
 
 class Option {
  public:
+  Option()
+      : protocol_(Protocol::kPHttp),
+        method_(HttpMethod::kHMGet),
+        version_(HttpVersion::kHV1_0),
+        http_trace_({-1, false, false, false}),
+        timeout_(0), threads_(0), clients_(0), trace_(false) {}
+
   Protocol protocol()   const     { return protocol_; }
   HttpMethod method()   const     { return method_; }
   HttpVersion version() const     { return version_; }
@@ -46,7 +53,7 @@ class Option {
   int threads()         const     { return threads_; }
   int clients()         const     { return clients_; }
 
-  const std::string url()                           const { return url_; }
+  const std::string url()                           const { return url_ + params_; }
   std::map<std::string, std::string> headers()      const { return headers_; }
   const std::string header(const std::string &key)  const { return headers_[key]; }
   std::unique_ptr<char []> entity()                       { return entity_; }
@@ -54,18 +61,44 @@ class Option {
     return { trace_, trace_ ? http_trace_ : nullptr};
   }
 
-  void set_protocol(const Protocol &protocol)  { protocol_ = protocol; }
-  void set_method(const HttpMethod &method)    { method_ = method; }
-  void set_version(const HttpVersion &version) { version_ = version; }
-  void set_timeout(const int &timeout)         { timeout_ = timeout; }
-  void set_threads(const int &threads)         { threads_ = threads; }
-  void set_clients(const int &clients)         { clients_ = clients; }
-  void set_url(const std::string &url, const std::map<std::string, std::string> &param) {}
-  void set_header(const std::string &key, const std::string &value) {
+  void SetProtocol(const Protocol &protocol)  { protocol_ = protocol; }
+  void SetMethod(const HttpMethod &method)    { method_   = method; }
+  void SetVersion(const HttpVersion &version) { version_  = version; }
+  void SetTimeout(const int &timeout)         { timeout_  = timeout; }
+  void SetThreads(const int &threads)         { threads_  = threads; }
+  void SetClients(const int &clients)         { clients_  = clients; }
+
+  void SetUrl(const std::string &url) {
+    url_ += url;
+  }
+
+  void SetParam(const char *params) {
+    if (params_.empty()) {
+      params_ += '?' + params;
+    } else {
+      params_ += '&' + params;
+    }
+  }
+
+  void SetParam(const std::string &params) {
+    SetParam(params.c_str());
+  }
+
+  void SetHeader(const std::string &key, const std::string &value) {
     headers_.insert({key, value});
   }
-  void set_entity(const std::string &entity) {}
-  void set_trace(bool trace, HttpTrace http_trace) {
+
+  void SetEntity(const char *entity) {
+    auto len = std::strlen(entity);
+    entity_ = std::make_unique<char []>(len);
+    ::memcpy(entity_.get(), entity, len);
+  }
+
+  void SetEntity(const std::string &entity) {
+    SetEntity(entity.c_str());
+  }
+
+  void SetTrace(bool trace, HttpTrace http_trace) {
     trace_ = trace;
     http_trace_ = trace ? http_trace : nullptr;
   }
@@ -84,6 +117,7 @@ class Option {
 
   std::map<std::string, std::string> headers_;
   std::string url_; // params在这里要拼好直接放在url里
+  std::string params_;
   std::unique_ptr<char[]> entity_;
 };
 
