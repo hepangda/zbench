@@ -53,12 +53,13 @@ void CLIOptions::Parse(int argc, char **argv) {
       case 'v': /*TODO: print version */ break;
       case 'e': option_.SetEntity(optarg);                 break;
       case 'h':
-        auto pheader = detail::CutKV(optarg, ':');
+        auto pheader = detail::CutKV(optarg);
         option_.SetHeader(pheader.first, pheader.second);
         break;
       case 'p':
-        auto pparam = detail::CutKV(optarg, '=');
-        option_.Set
+        option_.SetParam(optarg);
+        break;
+      case '': break;
 
 
     }
@@ -67,12 +68,12 @@ void CLIOptions::Parse(int argc, char **argv) {
 
 namespace detail {
 
-std::pair<std::string, std::string> CutKV(const char *str, char ch) {
+std::pair<std::string, std::string> CutKV(const char *str) {
   size_t pos = 0;
 
   for (size_t i = 0; i < std::strlen(str); ++i) {
     pos = i;
-    if (str[i] == ch)
+    if (str[i] == ':')
       break;
   }
 
@@ -80,8 +81,8 @@ std::pair<std::string, std::string> CutKV(const char *str, char ch) {
           std::string(str, pos + 1, std::strlen(str))};
 };
 
-std::pair<std::string, std::string> CutKV(const std::string &str, char ch) {
-  auto pos = str.find(ch);
+std::pair<std::string, std::string> CutKV(const std::string &str) {
+  auto pos = str.find(':');
 
   return {std::string(str, 0, pos),
           std::string(str, pos + 1, str.size())};

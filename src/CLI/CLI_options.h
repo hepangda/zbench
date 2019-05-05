@@ -21,8 +21,8 @@ class CLIOptions {
 
 namespace detail {
 
-std::pair<std::string, std::string> CutKV(const char *str, char ch);
-std::pair<std::string, std::string> CutKV(const std::string &str, char ch);
+std::pair<std::string, std::string> CutKV(const char *str);
+std::pair<std::string, std::string> CutKV(const std::string &str);
 
 }
 
