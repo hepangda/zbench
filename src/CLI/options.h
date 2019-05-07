@@ -9,6 +9,7 @@
 
 #include <unistd.h>
 
+#include <cstring>
 #include <map>
 #include <string>
 #include <memory>
@@ -18,6 +19,13 @@ enum HttpMethod {
   kHMPost,
   kHMPut,
   kHMDelete,
+};
+
+static const std::map<std::string, enum HttpMethod> method_map {
+    {"get", HttpMethod::kHMGet},
+    {"post", HttpMethod::kHMPost},
+    {"put", HttpMethod::kHMPut},
+    {"delete", HttpMethod::kHMDelete},
 };
 
 enum Protocol {
@@ -55,10 +63,10 @@ class Option {
 
   const std::string url()                           const { return url_ + params_; }
   std::map<std::string, std::string> headers()      const { return headers_; }
-  const std::string header(const std::string &key)  const { return headers_[key]; }
-  std::unique_ptr<char []> entity()                       { return entity_; }
+  const std::string header(const std::string &key)        { return headers_[key]; }
+//  std::unique_ptr<char []> entity()                       { return entity_; }
   auto trace() -> std::pair<bool, HttpTrace>        const {
-    return { trace_, trace_ ? http_trace_ : nullptr};
+    return { trace_, trace_ ? http_trace_ : HttpTrace{} };
   }
 
   void SetProtocol(const Protocol &protocol)  { protocol_ = protocol; }
@@ -67,6 +75,12 @@ class Option {
   void SetTimeout(const int &timeout)         { timeout_  = timeout; }
   void SetThreads(const int &threads)         { threads_  = threads; }
   void SetClients(const int &clients)         { clients_  = clients; }
+
+  void SetAutoClients(const int &autoclients) {
+    /* TODO: calculate the clients and threads number
+     * TODO: then use SetThreads() + SetClients() to set attr.
+     */
+  }
 
   void SetUrl(const std::string &url) {
     url_ += url;
@@ -100,7 +114,7 @@ class Option {
 
   void SetTrace(bool trace, HttpTrace http_trace) {
     trace_ = trace;
-    http_trace_ = trace ? http_trace : nullptr;
+    http_trace_ = trace ? http_trace : HttpTrace{};
   }
 
  private:
