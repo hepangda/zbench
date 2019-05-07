@@ -16,6 +16,9 @@ class CLIOptions {
   void SetOption(Option &option);
 
  private:
+  void PraseDSL(const char *str);
+  void ParseDSLFile(const char *filename);
+
   Option option_;
 };
 
