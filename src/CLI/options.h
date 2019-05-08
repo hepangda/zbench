@@ -21,13 +21,6 @@ enum HttpMethod {
   kHMDelete,
 };
 
-static const std::map<std::string, enum HttpMethod> method_map {
-    {"get", HttpMethod::kHMGet},
-    {"post", HttpMethod::kHMPost},
-    {"put", HttpMethod::kHMPut},
-    {"delete", HttpMethod::kHMDelete},
-};
-
 enum Protocol {
   kPHttp,
   kPHttps,
@@ -43,6 +36,13 @@ struct HttpTrace {
   bool trace_syscall_;
   bool trace_memory_;
   bool trace_cpu_;
+};
+
+static const std::map<std::string, enum HttpMethod> method_map {
+    {"get", HttpMethod::kHMGet},
+    {"post", HttpMethod::kHMPost},
+    {"put", HttpMethod::kHMPut},
+    {"delete", HttpMethod::kHMDelete},
 };
 
 class Option {
@@ -88,9 +88,9 @@ class Option {
 
   void SetParam(const char *params) {
     if (params_.empty()) {
-      params_ += '?' + params;
+      params_ = params_ + "?" + params;
     } else {
-      params_ += '&' + params;
+      params_ = params_ + "&" + params;
     }
   }
 
