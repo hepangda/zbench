@@ -4,7 +4,6 @@
  * @author Crow 
  */
 
-
 #include <getopt.h>
 #include <cstring>
 
@@ -24,13 +23,14 @@ static int  cli_pid = -1;
 static bool cli_trace_syscall = false;
 static bool cli_trace_memory = false;
 static bool cli_trace_cpu = false;
+static bool cli_daemon = false;
 
 /**
  * The core function of CommandOptions to parse the arguments.
  * @param argc  the count of command arguments
  * @param argv  the command arguments
  */
-const Option &CommandOptions::Parse(int argc, char **argv) {
+auto CommandOptions::Parse(int argc, char **argv) -> std::pair<bool, std::unique_ptr<Option>> {
   HttpTrace cli_http_trace{};
   std::pair<std::string, std::string> pheader;
   static struct option long_option[] = {
@@ -38,8 +38,6 @@ const Option &CommandOptions::Parse(int argc, char **argv) {
       {"POST",       no_argument, nullptr, 'P'},
       {"PUT",        no_argument, nullptr, 'U'},
       {"DELETE",     no_argument, nullptr, 'D'},
-      {"http",       no_argument, reinterpret_cast<int *>(&cli_http), true},
-      {"https",      no_argument, reinterpret_cast<int *>(&cli_http), false},
       {"version",    required_argument, nullptr, 'v'},
       {"entity",     required_argument, nullptr, 'e'},
       {"header",     required_argument, nullptr, 'h'},
@@ -52,6 +50,9 @@ const Option &CommandOptions::Parse(int argc, char **argv) {
       {"server-pid", required_argument, nullptr, 's'},
       {"dsl",        required_argument, nullptr, 'd'},
       {"file",       required_argument, nullptr, 'f'},
+      {"http",          no_argument, reinterpret_cast<int *>(&cli_http), true},
+      {"https",         no_argument, reinterpret_cast<int *>(&cli_http), false},
+      {"daemon",        no_argument, reinterpret_cast<int *>(&cli_daemon), true},
       {"enable-trace",  no_argument, reinterpret_cast<int *>(&cli_trace), true},
       {"trace-syscall", no_argument, reinterpret_cast<int *>(&cli_trace_syscall), true},
       {"trace-memory",  no_argument, reinterpret_cast<int *>(&cli_trace_memory), true},
@@ -61,37 +62,37 @@ const Option &CommandOptions::Parse(int argc, char **argv) {
   int res(-1);
   while ((res = ::getopt_long(argc, argv, ":GPUDve:h:p:u:t:T:c:a:s:d:f:", long_option, nullptr)) != -1) {
     switch (res) {
-      case 'G': option_.SetMethod(HttpMethod::kHMGet);    break;
-      case 'P': option_.SetMethod(HttpMethod::kHMPost);   break;
-      case 'U': option_.SetMethod(HttpMethod::kHMPut);    break;
-      case 'D': option_.SetMethod(HttpMethod::kHMDelete); break;
-      case 'e': option_.SetEntity(optarg);                 break;
+      case 'G': option_->SetMethod(HttpMethod::kHMGet);    break;
+      case 'P': option_->SetMethod(HttpMethod::kHMPost);   break;
+      case 'U': option_->SetMethod(HttpMethod::kHMPut);    break;
+      case 'D': option_->SetMethod(HttpMethod::kHMDelete); break;
+      case 'e': option_->SetEntity(optarg);                 break;
       case 'h':
         pheader = detail::CutKV(optarg);
-        option_.SetHeader(pheader.first, pheader.second);
+        option_->SetHeader(pheader.first, pheader.second);
         break;
-      case 'p': option_.SetParam(optarg);                  break;
-      case 'u': option_.SetUrl(optarg);                    break;
-      case 't': option_.SetTimeout(atoi(optarg));          break;
-      case 'T': option_.SetThreads(atoi(optarg));          break;
-      case 'c': option_.SetClients(atoi(optarg));          break;
-      case 'a': option_.SetAutoClients(atoi(optarg));      break;
+      case 'p': option_->SetParam(optarg);                  break;
+      case 'u': option_->SetUrl(optarg);                    break;
+      case 't': option_->SetTimeout(atoi(optarg));          break;
+      case 'T': option_->SetThreads(atoi(optarg));          break;
+      case 'c': option_->SetClients(atoi(optarg));          break;
+      case 'a': option_->SetAutoClients(atoi(optarg));      break;
       case 'v':
         if (optarg == "1.0") {
-          option_.SetVersion(HttpVersion::kHV1_0);
+          option_->SetVersion(HttpVersion::kHV1_0);
         } else {
-          option_.SetVersion(HttpVersion::kHV1_1);
+          option_->SetVersion(HttpVersion::kHV1_1);
         }
 
       case 's':
         cli_http_trace = {atoi(optarg), cli_trace_syscall, cli_trace_memory, cli_trace_cpu};
-        option_.SetTrace(cli_trace, cli_http_trace);
+        option_->SetTrace(cli_trace, cli_http_trace);
         break;
 
       case 'd':
         try {
           ParseDslStr(optarg);
-          return option_;
+          return {true, std::move(option_)};
         } catch(const std::runtime_error &err) {
           std::cerr << err.what() << std::endl;
           std::exit(EXIT_FAILURE);
@@ -100,7 +101,7 @@ const Option &CommandOptions::Parse(int argc, char **argv) {
       case 'f':
         try {
           ParseDslFile(optarg);
-          return option_;
+          return {true, std::move(option_)};
         } catch (const std::runtime_error &err) {
           std::cerr << err.what() << std::endl;
           std::exit(EXIT_FAILURE);
@@ -108,22 +109,30 @@ const Option &CommandOptions::Parse(int argc, char **argv) {
 
       case ':':  throw std::runtime_error("Error: missing arguments");
       case '?':  throw std::runtime_error("Error: unrecognized option");
-      default :  throw std::runtime_error("Error: unexpected option");
+      default :  break;
     }
+  }
+
+  // handling CLI mode and daemon mode are set at the same time
+  if (cli_daemon) {
+    return {false, nullptr};
   }
 
   // handling some unreasonable options settings
   // set Http version
-  option_.SetProtocol(cli_http ? Protocol::kPHttp : Protocol::kPHttps);
+  option_->SetProtocol(cli_http ? Protocol::kPHttp : Protocol::kPHttps);
 
   // set HttpTrace
   if (!cli_trace) {
-    option_.SetTrace(false, {-1, false, false, false});
+    option_->SetTrace(false, {-1, false, false, false});
   } else {
-    option_.SetTrace(true, cli_http_trace);
+    cli_http_trace.trace_syscall_ = cli_trace_syscall;
+    cli_http_trace.trace_memory_ = cli_trace_memory;
+    cli_http_trace.trace_cpu_ = cli_trace_cpu;
+    option_->SetTrace(true, cli_http_trace);
   }
 
-  return option_;
+  return {true, std::move(option_)};
 }
 
 /**
@@ -167,13 +176,13 @@ void CommandOptions::ParseDslFile(const char *filename) {
 void CommandOptions::ParseDoc(const rapidjson::Document &doc) {
   // set HTTP method
   assert(doc["method"].IsString());
-  option_.SetMethod(method_map.find(doc["method"].GetString())->second);
+  option_->SetMethod(method_map.find(doc["method"].GetString())->second);
 
   // set url params
   assert(doc["params"].IsArray());
   for (auto &var : doc["params"].GetArray()) {
     assert(var.IsString());
-    option_.SetParam(var.GetString());
+    option_->SetParam(var.GetString());
   }
 
   // set Http headers
@@ -181,36 +190,36 @@ void CommandOptions::ParseDoc(const rapidjson::Document &doc) {
   for (auto &var : doc["headers"].GetArray()) {
     assert(var.IsString());
     auto pair = detail::CutKV(var.GetString());
-    option_.SetHeader(pair.first, pair.second);
+    option_->SetHeader(pair.first, pair.second);
   }
 
   // set HTTP/HTTPS
   assert(doc["protocol"].IsString());
   if (doc["protocol"] == "http") {
-    option_.SetProtocol(Protocol::kPHttp);
+    option_->SetProtocol(Protocol::kPHttp);
   } else {
-    option_.SetProtocol(Protocol::kPHttps);
+    option_->SetProtocol(Protocol::kPHttps);
   }
 
   // set version
   assert(doc["version"].IsDouble());
   switch(doc["version"].GetInt()) {
-    case 0: option_.SetVersion(HttpVersion::kHV1_0); break;
-    case 1: option_.SetVersion(HttpVersion::kHV1_1); break;
+    case 0: option_->SetVersion(HttpVersion::kHV1_0); break;
+    case 1: option_->SetVersion(HttpVersion::kHV1_1); break;
     default: break;
   }
 
   // set url
   assert(doc["url"].IsString());
-  option_.SetUrl(doc["url"].GetString());
+  option_->SetUrl(doc["url"].GetString());
 
   // set entity
   assert(doc["entity"].IsString());
-  option_.SetEntity(doc["entity"].GetString());
+  option_->SetEntity(doc["entity"].GetString());
 
   // set timeout
   assert(doc["timeout"].IsInt());
-  option_.SetTimeout(doc["timeout"].GetInt());
+  option_->SetTimeout(doc["timeout"].GetInt());
 
   // set concurrency
   assert(doc["concurrency"].IsObject());
@@ -219,12 +228,12 @@ void CommandOptions::ParseDoc(const rapidjson::Document &doc) {
 
   if (con_doc["mode"].GetString() == "auto") {
     assert(con_doc["autoclients"].IsInt());
-    option_.SetAutoClients(con_doc["autoclinets"].GetInt());
+    option_->SetAutoClients(con_doc["autoclinets"].GetInt());
   } else {
     assert(con_doc["threads"].IsInt());
     assert(con_doc["clients"].IsInt());
-    option_.SetThreads(con_doc["threads"].GetInt());
-    option_.SetClients(con_doc["clients"].GetInt());
+    option_->SetThreads(con_doc["threads"].GetInt());
+    option_->SetClients(con_doc["clients"].GetInt());
   }
 
   // set trace
@@ -238,12 +247,12 @@ void CommandOptions::ParseDoc(const rapidjson::Document &doc) {
     assert(trace_doc["memory"].IsBool());
     assert(trace_doc["cpu"].IsBool());
 
-    option_.SetTrace(true, {trace_doc["serverpid"].GetInt(),
+    option_->SetTrace(true, {trace_doc["serverpid"].GetInt(),
                            trace_doc["syscall"].GetBool(),
                            trace_doc["memory"].GetBool(),
                            trace_doc["cpu"].GetBool()});
   } else {
-    option_.SetTrace(false, HttpTrace{});
+    option_->SetTrace(false, HttpTrace{});
   }
 
 }

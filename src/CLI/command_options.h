@@ -9,17 +9,22 @@
 
 #include "options.h"
 
+#include <memory>
+
+#include <rapidjson/rapidjson.h>
+#include <rapidjson/document.h>
+
 class CommandOptions {
  public:
-  CommandOptions() noexcept = default;
-  const Option &Parse(int argc, char **argv);
+  CommandOptions() : option_(std::make_unique<Option>()) {}
+  auto Parse(int argc, char **argv) -> std::pair<bool, std::unique_ptr<Option>>;
 
  private:
   void ParseDoc(const rapidjson::Document &doc);
   void ParseDslStr(const char *str);
   void ParseDslFile(const char *filename);
 
-  Option option_;
+  std::unique_ptr<Option> option_;
 };
 
 namespace detail {
