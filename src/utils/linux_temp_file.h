@@ -1,7 +1,3 @@
-//
-// Created by pangda on 5/9/19.
-//
-
 #ifndef BISHE_LINUX_TEMP_FILE_H
 #define BISHE_LINUX_TEMP_FILE_H
 

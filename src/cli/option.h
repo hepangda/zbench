@@ -1,7 +1,3 @@
-//
-// Created by pangda on 5/9/19.
-//
-
 #ifndef BISHE_OPTION_H
 #define BISHE_OPTION_H
 

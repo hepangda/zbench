@@ -2,11 +2,13 @@
 #define BISHE_HTTP_SESSION_H
 
 #include <memory>
+#include "client_scheduler.h"
+#include "../utils/read_buffer_adapter.h"
 
-class HttpSession: public std::enable_shared_from_this<HttpSession> {
+class HttpSession : public std::enable_shared_from_this<HttpSession> {
  public:
   HttpSession(ClientScheduler &cs, ReadBufferAdapter request_buffer) :
-  socket_(cs_.GetIoContext(), ssl_ctx_), cs_(cs), read_buffer_(cs_.GetRequest(), cs_.GetRequestSize()) {}
+      socket_(cs_.GetIoContext()), cs_(cs), read_buffer_(cs_.GetRequest(), cs_.GetRequestSize()) {}
 
   void Start() {
     auto self = shared_from_this();
@@ -20,11 +22,11 @@ class HttpSession: public std::enable_shared_from_this<HttpSession> {
     kError,
   };
 
-  static void AsyncConnect(std::shared_ptr<HttpsSession> self);
-  static void Bench(std::shared_ptr<HttpsSession> self, BenchState state);
-  static void BenchWrite(std::shared_ptr<HttpsSession> self);
-  static void BenchRead(std::shared_ptr<HttpsSession> self);
-  static void Report(std::shared_ptr<HttpsSession> self) {
+  static void AsyncConnect(std::shared_ptr<HttpSession> self);
+  static void Bench(std::shared_ptr<HttpSession> self, BenchState state);
+  static void BenchWrite(std::shared_ptr<HttpSession> self);
+  static void BenchRead(std::shared_ptr<HttpSession> self);
+  static void Report(std::shared_ptr<HttpSession> self) {
     self->cs_.Report(self->report_);
   }
  private:
