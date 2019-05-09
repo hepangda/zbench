@@ -64,7 +64,7 @@ class Option {
   const std::string url()                           const { return url_ + params_; }
   std::map<std::string, std::string> headers()      const { return headers_; }
   const std::string header(const std::string &key)        { return headers_[key]; }
-//  std::unique_ptr<char []> entity()                       { return entity_; }
+  std::unique_ptr<char []> entity()                       { return std::move(entity_); }
   auto trace() -> std::pair<bool, HttpTrace>        const {
     return { trace_, trace_ ? http_trace_ : HttpTrace{} };
   }
