@@ -5,6 +5,8 @@
 #include "client_scheduler.h"
 #include "../utils/read_buffer_adapter.h"
 
+class ClientScheduler;
+
 class HttpSession : public std::enable_shared_from_this<HttpSession> {
  public:
   HttpSession(ClientScheduler &cs, ReadBufferAdapter request_buffer) :

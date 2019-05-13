@@ -7,18 +7,17 @@
 #include <map>
 #include <string>
 #include <memory>
-#include <thread>
+
 #include "optfwd.h"
-#include "http_trace.h"
 
 class Option {
  public:
   Option()
       : protocol_(Protocol::kPHttp),
-      method_(HttpMethod::kHMGet),
-      version_(HttpVersion::kHV1_0),
-      http_trace_({-1, false, false, false}),
-      timeout_(0), threads_(0), clients_(0), trace_(false) {}
+        method_(HttpMethod::kHMGet),
+        version_(HttpVersion::kHV1_0),
+        http_trace_({-1, false, false, false}),
+        timeout_(0), threads_(0), clients_(0), trace_(false) {}
 
   Protocol protocol() const { return protocol_; }
   HttpMethod method() const { return method_; }
@@ -30,7 +29,7 @@ class Option {
   const std::string url() const { return url_ + params_; }
   std::map<std::string, std::string> headers() const { return headers_; }
   const std::string header(const std::string &key) { return headers_[key]; }
-//  std::unique_ptr<char[]> entity() { return entity_; }
+  std::unique_ptr<char[]> entity() { return std::move(entity_); }
   auto trace() -> std::pair<bool, HttpTrace> const {
     return {trace_, trace_ ? http_trace_ : HttpTrace{}};
   }
@@ -43,15 +42,9 @@ class Option {
   void SetClients(const int &clients) { clients_ = clients; }
 
   void SetAutoClients(const int &autoclients) {
-    int max_suit_thread = std::thread::hardware_concurrency();
-    if (max_suit_thread >= autoclients) {
-      SetThreads(autoclients);
-      SetClients(1);
-    } else {
-      int client_per_thread = autoclients / max_suit_thread;
-      SetThreads(max_suit_thread);
-      SetClients(client_per_thread);
-    }
+    /* TODO: calculate the clients and threads number
+     * TODO: then use SetThreads() + SetClients() to set attr.
+     */
   }
 
   void SetUrl(const std::string &url) {

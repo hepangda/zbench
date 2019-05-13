@@ -4,6 +4,16 @@
 
 
 int main() {
+//  CommandOptions op;
+//  auto pair = op.Parse(argc, argv);
+//  if (pair.first) {
+//    auto option = std::move(pair.second);
+//    std::cout << option->url() << std::endl;
+//  } else {
+//    WebServer server;
+//    server.Start();
+//  }
+
   HttpRequest request("GET", "/", "HTTP/1.1");
   request.SetHeaderItem("Connection", "close");
   ni::tcp::endpoint ep{ ni::make_address_v4("123.125.114.144"), 443 };
