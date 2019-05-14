@@ -10,7 +10,7 @@ class ClientScheduler;
 class HttpSession : public std::enable_shared_from_this<HttpSession> {
  public:
   HttpSession(ClientScheduler &cs, ReadBufferAdapter request_buffer) :
-      socket_(cs_.GetIoContext()), cs_(cs), read_buffer_(cs_.GetRequest(), cs_.GetRequestSize()) {}
+      cs_(cs), socket_(cs.GetIoContext()), read_buffer_(cs.GetRequest(), cs.GetRequestSize()) {}
 
   void Start() {
     auto self = shared_from_this();

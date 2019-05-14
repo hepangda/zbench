@@ -2,19 +2,19 @@
 #define BISHE_OPTFWD_H
 
 enum HttpMethod {
-  kHMGet,
+  kHMGet = 0,
   kHMPost,
   kHMPut,
   kHMDelete,
 };
 
 enum Protocol {
-  kPHttp,
+  kPHttp = 0,
   kPHttps,
 };
 
 enum HttpVersion {
-  kHV1_0,
+  kHV1_0 = 0,
   kHV1_1,
 };
 

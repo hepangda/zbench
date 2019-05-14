@@ -37,7 +37,7 @@ class HttpRequest {
     headers_[key] = std::move(value);
   }
 
-  void PutBody(std::shared_ptr<char[]> body, size_t size) {
+  void PutBody(std::shared_ptr<char> body, size_t size) {
     body_ = std::move(body);
     body_length_ = size;
   }
@@ -75,7 +75,7 @@ class HttpRequest {
     return headers_.cend();
   }
 
-  std::shared_ptr<char[]> GetBody() const {
+  std::shared_ptr<char> GetBody() const {
     return body_;
   }
 
@@ -87,7 +87,7 @@ class HttpRequest {
   std::string version_;
   std::string request_uri_;
   std::unordered_map<std::string, std::string> headers_;
-  std::shared_ptr<char[]> body_{nullptr};
+  std::shared_ptr<char> body_{nullptr};
   size_t body_length_{0};
 };
 

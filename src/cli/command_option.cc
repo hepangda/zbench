@@ -54,8 +54,8 @@ std::pair<bool, std::unique_ptr<Option>> CommandOptions::Parse(int argc, char **
       {"trace-cpu", no_argument, reinterpret_cast<int *>(&cli_trace_cpu), true},
   };
 
-  int res(-1);
-  while ((res = ::getopt_long(argc, argv, ":GPUDve:h:p:u:t:T:c:a:s:d:f:", long_option, nullptr)) != -1) {
+  int res{-1};
+  while ((res = ::getopt_long(argc, argv, ":GPUDv:e:h:p:u:t:T:c:a:s:d:f:", long_option, nullptr)) != -1) {
     switch (res) {
       case 'G': option_->SetMethod(HttpMethod::kHMGet);
         break;
@@ -111,8 +111,8 @@ std::pair<bool, std::unique_ptr<Option>> CommandOptions::Parse(int argc, char **
           std::exit(EXIT_FAILURE);
         }
 
-      case ':': throw std::runtime_error("Error: missing arguments");
-      case '?': throw std::runtime_error("Error: unrecognized option");
+      case ':': throw std::runtime_error("missing arguments");
+      case '?': throw std::runtime_error("unrecognized option");
       default : break;
     }
   }
@@ -134,6 +134,14 @@ std::pair<bool, std::unique_ptr<Option>> CommandOptions::Parse(int argc, char **
     cli_http_trace.trace_memory_ = cli_trace_memory;
     cli_http_trace.trace_cpu_ = cli_trace_cpu;
     option_->SetTrace(true, cli_http_trace);
+  }
+
+  if (option_->threads() <= 0) {
+    option_->SetThreads(1);
+  }
+
+  if (option_->clients() <= 0) {
+    option_->SetClients(1);
   }
 
   return {true, std::move(option_)};
@@ -282,8 +290,8 @@ namespace detail {
  * @return KV pair pair.first is key, and pair.second is value
  */
 std::pair<std::string, std::string> CutKV(const char *str) {
-  size_t pos = 0;
-  for (size_t i = 0; i < std::strlen(str); ++i) {
+  std::size_t pos = 0;
+  for (std::size_t i = 0; i < std::strlen(str); ++i) {
     pos = i;
     if (str[i] == ':')
       break;

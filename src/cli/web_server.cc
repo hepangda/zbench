@@ -117,7 +117,9 @@ void WebServer::SendBenchResult() {
             auto res = std::move(responses_[id]);
             responses_.erase(id);
             result_resp.set_header("Content-Type", "application/json");
-            result_resp.write(*res);
+            result_resp.write(res->c_str());
+
+            return result_resp;
           }
       );
 }

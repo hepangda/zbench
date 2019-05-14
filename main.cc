@@ -1,25 +1,29 @@
-#include "src/utils/net.h"
-#include "src/core/benchmarker.h"
 #include <iostream>
+#include "src/cli/command_option.h"
+#include "src/cli/web_server.h"
+#include "src/core/cli_starter.h"
 
-
-int main() {
-//  CommandOptions op;
-//  auto pair = op.Parse(argc, argv);
-//  if (pair.first) {
-//    auto option = std::move(pair.second);
-//    std::cout << option->url() << std::endl;
-//  } else {
-//    WebServer server;
-//    server.Start();
-//  }
-
-  HttpRequest request("GET", "/", "HTTP/1.1");
-  request.SetHeaderItem("Connection", "close");
-  ni::tcp::endpoint ep{ ni::make_address_v4("123.125.114.144"), 443 };
-  Benchmarker bm(request, ep);
-  bm.Start();
+int main(int argc, char *argv[]) {
+  CommandOptions op;
+  try {
+    auto pair = op.Parse(argc, argv);
+    if (pair.first) {
+      CliStarter starter{*pair.second};
+      starter.Start();
+    } else {
+      WebServer server;
+      server.Start();
+    }
+  } catch (const std::exception &ex) {
+    std::printf("Occured error: %s\n", ex.what());
+  }
 }
+//  HttpRequest request("GET", "/", "HTTP/1.1");
+//  request.SetHeaderItem("Connection", "close");
+//  ni::tcp::endpoint ep{ ni::make_address_v4("123.125.114.144"), 443 };
+//  Benchmarker bm(request, ep);
+//  bm.Start();
+
 
 //int main() {
 //  n::io_context ioc;

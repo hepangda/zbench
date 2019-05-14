@@ -4,6 +4,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include <cstddef>
+
 enum FileMode {
   kFMReadOnly,
   kFMWriteOnly,
@@ -21,11 +23,11 @@ class LinuxFile {
     }
   }
 
-  int Write(void *src, size_t size) {
+  int Write(void *src, std::size_t size) {
     return write(fd_, src, size);
   }
 
-  int Read(void *dest, size_t size) {
+  int Read(void *dest, std::size_t size) {
     return read(fd_, dest, size);
   }
  protected:

@@ -7,17 +7,22 @@
 #include <map>
 #include <string>
 #include <memory>
+#include <thread>
 
 #include "optfwd.h"
 
 class Option {
  public:
   Option()
-      : protocol_(Protocol::kPHttp),
-        method_(HttpMethod::kHMGet),
-        version_(HttpVersion::kHV1_0),
-        http_trace_({-1, false, false, false}),
-        timeout_(0), threads_(0), clients_(0), trace_(false) {}
+      : protocol_(Protocol::kPHttp), method_(HttpMethod::kHMGet), version_(HttpVersion::kHV1_0),
+        http_trace_({-1, false, false, false}), timeout_(0), threads_(0), clients_(0), trace_(false),
+        entity_(nullptr) {}
+
+  Option(Option &&rhs) noexcept :
+      protocol_(rhs.protocol_), method_(rhs.method_), version_(rhs.version_), timeout_(rhs.timeout_),
+      threads_(rhs.threads_), clients_(rhs.clients_), trace_(rhs.trace_), http_trace_(rhs.http_trace_),
+      headers_(std::move(rhs.headers_)), url_(std::move(rhs.url_)), params_(std::move(rhs.params_)),
+      entity_(std::move(rhs.entity_)) {}
 
   Protocol protocol() const { return protocol_; }
   HttpMethod method() const { return method_; }
@@ -42,9 +47,15 @@ class Option {
   void SetClients(const int &clients) { clients_ = clients; }
 
   void SetAutoClients(const int &autoclients) {
-    /* TODO: calculate the clients and threads number
-     * TODO: then use SetThreads() + SetClients() to set attr.
-     */
+    int max_suit_thread = std::thread::hardware_concurrency();
+    if (max_suit_thread >= autoclients) {
+      SetThreads(autoclients);
+      SetClients(1);
+    } else {
+      int client_per_thread = autoclients / max_suit_thread;
+      SetThreads(max_suit_thread);
+      SetClients(client_per_thread);
+    }
   }
 
   void SetUrl(const std::string &url) {

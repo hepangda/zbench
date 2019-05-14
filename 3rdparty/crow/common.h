@@ -4,6 +4,7 @@
 #include <string>
 #include <stdexcept>
 #include <iostream>
+#include <cstddef>
 #include "crow/utility.h"
 
 namespace crow
