@@ -2,15 +2,15 @@
 #define BISHE_HTTP_SESSION_H
 
 #include <memory>
-#include "client_scheduler.h"
 #include "../utils/read_buffer_adapter.h"
+#include "../utils/write_buffer_adapter.h"
+#include "client_report.h"
 
 class ClientScheduler;
 
 class HttpSession : public std::enable_shared_from_this<HttpSession> {
  public:
-  HttpSession(ClientScheduler &cs, ReadBufferAdapter request_buffer) :
-      cs_(cs), socket_(cs.GetIoContext()), read_buffer_(cs.GetRequest(), cs.GetRequestSize()) {}
+  HttpSession(ClientScheduler &cs);
 
   void Start() {
     auto self = shared_from_this();
@@ -28,9 +28,7 @@ class HttpSession : public std::enable_shared_from_this<HttpSession> {
   static void Bench(std::shared_ptr<HttpSession> self, BenchState state);
   static void BenchWrite(std::shared_ptr<HttpSession> self);
   static void BenchRead(std::shared_ptr<HttpSession> self);
-  static void Report(std::shared_ptr<HttpSession> self) {
-    self->cs_.Report(self->report_);
-  }
+  static void Report(std::shared_ptr<HttpSession> self);
  private:
   ni::tcp::socket socket_;
 

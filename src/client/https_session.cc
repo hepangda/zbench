@@ -1,19 +1,10 @@
 #include "https_session.h"
 #include "client_scheduler.h"
 
+using std::size_t;
+
 HttpsSession::HttpsSession(ClientScheduler &cs) :
     socket_(cs.GetIoContext(), ssl_ctx_), cs_(cs), read_buffer_(cs.GetRequest(), cs.GetRequestSize()) {}
-
-void HttpsSession::AsyncHandshake(std::shared_ptr<HttpsSession> self) {
-  self->socket_.async_handshake(ns::stream_base::handshake_type::client, [self](const std::error_code &ec) {
-    if (!ec) {
-      self->Bench(self, kToWrite);
-    } else {
-      self->report_.ReportError("SSL Handshake failed");
-      self->Bench(self, kError);
-    }
-  });
-}
 
 void HttpsSession::AsyncConnect(std::shared_ptr<HttpsSession> self) {
   self->socket_.lowest_layer().async_connect(self->cs_.GetEndpoint(), [self](const std::error_code &ec) {
@@ -26,18 +17,38 @@ void HttpsSession::AsyncConnect(std::shared_ptr<HttpsSession> self) {
   });
 }
 
+void HttpsSession::AsyncHandshake(std::shared_ptr<HttpsSession> self) {
+  self->socket_.async_handshake(ns::stream_base::handshake_type::client, [self](const std::error_code &ec) {
+    if (!ec) {
+      self->Bench(self, kToWrite);
+    } else {
+      self->report_.ReportError("SSL Handshake failed");
+      self->Bench(self, kError);
+    }
+  });
+}
+
 void HttpsSession::Bench(std::shared_ptr<HttpsSession> self, BenchState state) {
   switch (state) {
-  case kToWrite:
-    self->BenchWrite(self);
-    break;
-  case kToRead:
-    self->BenchRead(self);
-    break;
-  case kDone:
-  case kError:
-    self->Report(self);
-    break;
+    case kToWrite:
+      self->report_.ReportConnectedTime();
+      if (!self->report_.IsReportedWriteStartTime()) {
+        self->report_.ReportWriteStartTime();
+      }
+      self->BenchWrite(self);
+      break;
+    case kToRead:
+      self->report_.ReportWriteEndTime();
+      if (!self->report_.IsReportedReadStartTime()) {
+        self->report_.ReportReadStartTime();
+      }
+      self->BenchRead(self);
+      break;
+    case kDone:
+      self->report_.ReportReadEndTime();
+    case kError:
+      self->Report(self);
+      break;
   }
 }
 
@@ -48,7 +59,7 @@ void HttpsSession::BenchRead(std::shared_ptr<HttpsSession> self) {
       [self](const std::error_code &ec, size_t bytes) {
         if (!ec) {
           self->write_buffer_.Commit(bytes);
-          printf("\n Recv: \n %s \n\n", self->write_buffer_.data<char>());
+//          printf("\n Recv: \n %s \n\n", self->write_buffer_.data<char>());
           self->write_buffer_.Consume(bytes);
           self->report_.ReportReadByte(bytes);
           self->Bench(self, kToRead);
@@ -83,5 +94,6 @@ void HttpsSession::BenchWrite(std::shared_ptr<HttpsSession> self) {
 }
 
 void HttpsSession::Report(std::shared_ptr<HttpsSession> self) {
+  self->report_.ReportEndTime();
   self->cs_.Report(self->report_);
 }

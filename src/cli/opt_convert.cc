@@ -31,3 +31,11 @@ const char* OptConvert::ConvertService(Protocol protocol) {
 
   return convert_map[protocol];
 }
+
+const char *OptConvert::ConvertVersionString(HttpVersion version) {
+  const char *convert_map[] = {
+      "HTTP/1.0", "HTTP/1.1"
+  };
+
+  return convert_map[version];
+}

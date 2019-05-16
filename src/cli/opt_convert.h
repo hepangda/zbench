@@ -6,6 +6,7 @@
 class OptConvert {
  public:
   static const char *ConvertVersion(HttpVersion version);
+  static const char *ConvertVersionString(HttpVersion version);
   static const char *ConvertMethod(HttpMethod method);
   static const char *ConvertProtocol(Protocol protocol);
   static const char *ConvertService(Protocol protocol);

@@ -7,6 +7,21 @@
 #include <iostream>
 
 void CliStarter::Start() {
+  PrintStart();
+
+  puts("Producing Http Request...");
+  HttpRequest request = GetHttpRequest();
+
+  puts("Searching endpoint...");
+  ni::tcp::endpoint ep = GetEndpoint();
+
+  puts("\n===================\nPress Enter to start...");
+  std::getchar();
+
+  Benchmarker{request, ep, std::move(option_)}.Start();
+}
+
+void CliStarter::PrintStart() {
   puts("WebServer Test v1.0 --- CommandLine Version");
   printf("  Url: %s\n", option_.url().c_str());
   printf("  Timeout: %d\n", option_.timeout());
@@ -42,12 +57,14 @@ void CliStarter::Start() {
     printf("  Trace cpu: %s\n", (trace.second.trace_cpu_) ? "enable" : "disable");
   }
 
-  puts("====== Start =====");
-  puts("Producing Http Request...");
+  puts("");
+}
+
+HttpRequest CliStarter::GetHttpRequest() {
   HttpRequest request;
   request.SetMethod(OptConvert::ConvertMethod(option_.method()));
   request.SetRequestUri(option_.url());
-  request.SetVersion(OptConvert::ConvertVersion(option_.version()));
+  request.SetVersion(OptConvert::ConvertVersionString(option_.version()));
 
   for (const auto &i:option_.headers()) {
     request.SetHeaderItem(i.first, i.second);
@@ -60,14 +77,24 @@ void CliStarter::Start() {
     request.PutBody(ptr, strlen(rawptr));
   }
 
-  puts("Searching endpoint...");
-  ni::tcp::endpoint ep;
-  std::string url = option_.url();
-  std::string use_url;
+  return std::move(request);
+}
+
+ni::tcp::endpoint CliStarter::GetEndpoint() {
+  const std::string &url = option_.url();
+  std::string use_url{};
+  std::string port{};
 
   int iter = -1;
   for (iter = url.find("://") + 3; iter < url.size(); iter++) {
-    if (url[iter] != '/') {
+    if (url[iter] == '/') {
+      break;
+    } else if (url[iter] == ':') {
+      for (int j = iter + 1; url[j] != '/' && j < url.size(); j++) {
+        port += url[j];
+      }
+      break;
+    } else {
       use_url += url[iter];
     }
   }
@@ -76,11 +103,16 @@ void CliStarter::Start() {
     throw std::runtime_error("Invalid url.");
   }
 
-  printf("uri: %s\n", use_url.c_str());
-  n::io_service io_service;
-  ni::tcp::resolver resolver(io_service);
+  // printf("url = %s\nport = %s\n", use_url.c_str(), port.c_str());
+
+  n::io_context io_ctx;
+  ni::tcp::resolver resolver(io_ctx);
   ni::tcp::resolver::query query(use_url, OptConvert::ConvertService(option_.protocol()));
-  ep = *resolver.resolve(query).begin();
-  Benchmarker benchmarker{request, ep};
-  benchmarker.Start();
+
+  ni::tcp::endpoint ep = *resolver.resolve(query).begin();
+
+  if (!port.empty()) {
+    ep.port(std::stoi(port));
+  }
+  return ep;
 }

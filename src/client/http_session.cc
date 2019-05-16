@@ -1,5 +1,9 @@
 #include "http_session.h"
 #include "client_scheduler.h"
+#include "client_scheduler.h"
+
+HttpSession::HttpSession(ClientScheduler &cs) :
+    cs_(cs), socket_(cs.GetIoContext()), read_buffer_(cs.GetRequest(), cs.GetRequestSize()) {}
 
 void HttpSession::AsyncConnect(std::shared_ptr<HttpSession> self) {
   self->socket_.lowest_layer().async_connect(self->cs_.GetEndpoint(), [self](const std::error_code &ec) {
@@ -15,12 +19,21 @@ void HttpSession::AsyncConnect(std::shared_ptr<HttpSession> self) {
 void HttpSession::Bench(std::shared_ptr<HttpSession> self, BenchState state) {
   switch (state) {
     case kToWrite:
+      self->report_.ReportConnectedTime();
+      if (!self->report_.IsReportedWriteStartTime()) {
+        self->report_.ReportWriteStartTime();
+      }
       self->BenchWrite(self);
       break;
     case kToRead:
+      self->report_.ReportWriteEndTime();
+      if (!self->report_.IsReportedReadStartTime()) {
+        self->report_.ReportReadStartTime();
+      }
       self->BenchRead(self);
       break;
     case kDone:
+      self->report_.ReportReadEndTime();
     case kError:
       self->Report(self);
       break;
@@ -34,7 +47,7 @@ void HttpSession::BenchRead(std::shared_ptr<HttpSession> self) {
       [self](const std::error_code &ec, size_t bytes) {
         if (!ec) {
           self->write_buffer_.Commit(bytes);
-          printf("\n Recv: \n %s \n\n", self->write_buffer_.data<char>());
+//          printf("\n Recv: \n %s \n\n", self->write_buffer_.data<char>());
           self->write_buffer_.Consume(bytes);
           self->report_.ReportReadByte(bytes);
           self->Bench(self, kToRead);
@@ -66,4 +79,9 @@ void HttpSession::BenchWrite(std::shared_ptr<HttpSession> self) {
       self->Bench(self, kError);
     }
   });
+}
+
+void HttpSession::Report(std::shared_ptr<HttpSession> self) {
+  self->report_.ReportEndTime();
+  self->cs_.Report(self->report_);
 }

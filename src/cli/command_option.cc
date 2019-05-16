@@ -57,30 +57,42 @@ std::pair<bool, std::unique_ptr<Option>> CommandOptions::Parse(int argc, char **
   int res{-1};
   while ((res = ::getopt_long(argc, argv, ":GPUDv:e:h:p:u:t:T:c:a:s:d:f:", long_option, nullptr)) != -1) {
     switch (res) {
-      case 'G': option_->SetMethod(HttpMethod::kHMGet);
+      case 'G':
+        option_->SetMethod(HttpMethod::kHMGet);
         break;
-      case 'P': option_->SetMethod(HttpMethod::kHMPost);
+      case 'P':
+        option_->SetMethod(HttpMethod::kHMPost);
         break;
-      case 'U': option_->SetMethod(HttpMethod::kHMPut);
+      case 'U':
+        option_->SetMethod(HttpMethod::kHMPut);
         break;
-      case 'D': option_->SetMethod(HttpMethod::kHMDelete);
+      case 'D':
+        option_->SetMethod(HttpMethod::kHMDelete);
         break;
-      case 'e': option_->SetEntity(optarg);
+      case 'e':
+        option_->SetEntity(optarg);
         break;
-      case 'h':pheader = detail::CutKV(optarg);
+      case 'h':
+        pheader = detail::CutKV(optarg);
         option_->SetHeader(pheader.first, pheader.second);
         break;
-      case 'p': option_->SetParam(optarg);
+      case 'p':
+        option_->SetParam(optarg);
         break;
-      case 'u': option_->SetUrl(optarg);
+      case 'u':
+        option_->SetUrl(optarg);
         break;
-      case 't': option_->SetTimeout(std::stol(optarg));
+      case 't':
+        option_->SetTimeout(std::stol(optarg));
         break;
-      case 'T': option_->SetThreads(std::stol(optarg));
+      case 'T':
+        option_->SetThreads(std::stol(optarg));
         break;
-      case 'c': option_->SetClients(std::stol(optarg));
+      case 'c':
+        option_->SetClients(std::stol(optarg));
         break;
-      case 'a': option_->SetAutoClients(std::stol(optarg));
+      case 'a':
+        option_->SetAutoClients(std::stol(optarg));
         break;
       case 'v':
         if (strcmp(optarg, "1.0") == 0) {
@@ -89,7 +101,8 @@ std::pair<bool, std::unique_ptr<Option>> CommandOptions::Parse(int argc, char **
           option_->SetVersion(HttpVersion::kHV1_1);
         }
 
-      case 's':cli_http_trace = {std::stoi(optarg), cli_trace_syscall, cli_trace_memory, cli_trace_cpu};
+      case 's':
+        cli_http_trace = {std::stoi(optarg), cli_trace_syscall, cli_trace_memory, cli_trace_cpu};
         option_->SetTrace(cli_trace, cli_http_trace);
         break;
 
@@ -111,9 +124,12 @@ std::pair<bool, std::unique_ptr<Option>> CommandOptions::Parse(int argc, char **
           std::exit(EXIT_FAILURE);
         }
 
-      case ':': throw std::runtime_error("missing arguments");
-      case '?': throw std::runtime_error("unrecognized option");
-      default : break;
+      case ':':
+        throw std::runtime_error("missing arguments");
+      case '?':
+        throw std::runtime_error("unrecognized option");
+      default :
+        break;
     }
   }
 
@@ -215,11 +231,14 @@ void CommandOptions::ParseDoc(const rapidjson::Document &doc) {
   // set version
   assert(doc["version"].IsDouble());
   switch (doc["version"].GetInt()) {
-    case 0: option_->SetVersion(HttpVersion::kHV1_0);
+    case 0:
+      option_->SetVersion(HttpVersion::kHV1_0);
       break;
-    case 1: option_->SetVersion(HttpVersion::kHV1_1);
+    case 1:
+      option_->SetVersion(HttpVersion::kHV1_1);
       break;
-    default: break;
+    default:
+      break;
   }
 
   // set url
