@@ -47,7 +47,6 @@ void HttpSession::BenchRead(std::shared_ptr<HttpSession> self) {
       [self](const std::error_code &ec, size_t bytes) {
         if (!ec) {
           self->write_buffer_.Commit(bytes);
-//          printf("\n Recv: \n %s \n\n", self->write_buffer_.data<char>());
           self->write_buffer_.Consume(bytes);
           self->report_.ReportReadByte(bytes);
           self->Bench(self, kToRead);
@@ -55,7 +54,8 @@ void HttpSession::BenchRead(std::shared_ptr<HttpSession> self) {
           if (ec.value() == kErrorEof) {
             self->Bench(self, kDone);
           } else {
-            self->report_.ReportError("I/O error when resposing");
+//            self->report_.ReportError("I/O error when resposing");
+            self->report_.ReportError(ec.message().c_str());
             self->Bench(self, kError);
           }
         }

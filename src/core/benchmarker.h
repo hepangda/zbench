@@ -8,17 +8,21 @@
 
 class Benchmarker {
  public:
-  Benchmarker(HttpRequest request, ni::tcp::endpoint endpoint, Option option)
-      : io_ctx_(1), cs_(io_ctx_, std::move(endpoint), std::move(request)), option_(std::move(option)) {}
+  Benchmarker(const HttpRequest &request, const ni::tcp::endpoint &endpoint, Option &option)
+      : io_ctx_(1), cs_(io_ctx_, std::move(endpoint), std::move(request)), option_(option) {}
 
-  void Start() {
-    cs_.Spawn();
+  BenchResult Start() {
+    BenchResult result;
+    cs_.Spawn(option_.protocol(), option_.clients());
     io_ctx_.run_for(std::chrono::duration<int>{option_.timeout()});
-    cs_.PrintResult(option_.timeout());
+    cs_.PutBenchResult(result, option_.timeout());
+//    cs_.PrintResult(option_.timeout());
+
+    return result;
   }
  private:
   n::io_context io_ctx_;
-  Option option_;
+  Option &option_;
   ClientScheduler cs_;
 };
 

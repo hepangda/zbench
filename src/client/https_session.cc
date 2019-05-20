@@ -32,16 +32,12 @@ void HttpsSession::Bench(std::shared_ptr<HttpsSession> self, BenchState state) {
   switch (state) {
     case kToWrite:
       self->report_.ReportConnectedTime();
-      if (!self->report_.IsReportedWriteStartTime()) {
-        self->report_.ReportWriteStartTime();
-      }
+      self->report_.ReportWriteStartTime();
       self->BenchWrite(self);
       break;
     case kToRead:
       self->report_.ReportWriteEndTime();
-      if (!self->report_.IsReportedReadStartTime()) {
-        self->report_.ReportReadStartTime();
-      }
+      self->report_.ReportReadStartTime();
       self->BenchRead(self);
       break;
     case kDone:

@@ -6,8 +6,8 @@
 
 class ReadBufferAdapter {
  public:
-  explicit ReadBufferAdapter(size_t size) : ptr_(MakeSharedCharArray(size)), size_(size) {}
-  ReadBufferAdapter(std::shared_ptr<char> buf, size_t size) : ptr_(std::move(buf)), size_(size) {}
+  explicit ReadBufferAdapter(std::size_t size) : ptr_(MakeSharedCharArray(size)), size_(size) {}
+  ReadBufferAdapter(std::shared_ptr<char> buf, std::size_t size) : ptr_(std::move(buf)), size_(size) {}
   ReadBufferAdapter(ReadBufferAdapter &&rhs) noexcept
       : ptr_(std::move(rhs.ptr_)), size_(rhs.size_), cursor_(rhs.cursor_) {}
 
@@ -15,7 +15,7 @@ class ReadBufferAdapter {
     return cursor_ == size_;
   }
 
-  void IncreaseCursor(size_t diff) {
+  void IncreaseCursor(std::size_t diff) {
     if (cursor_ + diff <= size_) {
       cursor_ += diff;
     } else {
@@ -27,11 +27,11 @@ class ReadBufferAdapter {
     cursor_ = 0;
   }
 
-  size_t GetCursor() const {
+  std::size_t GetCursor() const {
     return cursor_;
   }
 
-  size_t GetSize() const {
+  std::size_t GetSize() const {
     return size_;
   }
 
@@ -49,8 +49,8 @@ class ReadBufferAdapter {
   }
  private:
   std::shared_ptr<char> ptr_;
-  size_t size_;
-  size_t cursor_{0};
+  std::size_t size_;
+  std::size_t cursor_{0};
 };
 
 #endif // BISHE_READ_BUFFER_ADAPTER_H

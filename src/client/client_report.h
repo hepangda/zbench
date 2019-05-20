@@ -87,10 +87,6 @@ class ClientReport {
   }
 
   long GetIoTime() const {
-//    printf("  {start=%ld,connect=%ld,wstart=%ld,wend=%ld,rstart=%ld,rend=%ld,end=%ld,msg=%p}\n",
-//        start_time_, connected_time_, write_start_time_, write_end_time_, read_start_time_,
-//        read_end_time_, end_time_, error_msg_);
-
     return GetReadingTime() + GetWritingTime();
   }
 

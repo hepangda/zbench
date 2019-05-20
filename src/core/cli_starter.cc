@@ -2,8 +2,12 @@
 #include "../cli/opt_convert.h"
 #include "../utils/http_request.h"
 #include "benchmarker.h"
+#include "syscall_tracer.h"
+#include "trace_result.h"
+#include "tracer.h"
 
-#include <regex>
+#include <mutex>
+#include <vector>
 #include <iostream>
 
 void CliStarter::Start() {
@@ -18,7 +22,41 @@ void CliStarter::Start() {
   puts("\n===================\nPress Enter to start...");
   std::getchar();
 
-  Benchmarker{request, ep, std::move(option_)}.Start();
+  std::vector<std::thread> threads;
+  std::list<TraceResult> trace_result;
+  std::vector<BenchResult> bench_result;
+  std::mutex mutex;
+
+  for (int i = 0; i < option_.threads(); i++) {
+    threads.emplace_back([this, request, ep, &bench_result, &mutex] {
+      auto result = Benchmarker{request, ep, option_}.Start();
+      {
+        std::lock_guard<std::mutex> guard{mutex};
+        bench_result.emplace_back(result);
+      }
+    });
+  }
+
+  if (option_.trace().first) {
+    if (option_.trace().second.trace_cpu_) {
+      threads.emplace_back([this, &trace_result] {
+        Tracer it{option_.trace().second.server_pid_, 1, trace_result};
+        for (int i = 0; i < option_.timeout(); i++) {
+          it.DoTrace();
+          sleep(1);
+        }
+      });
+    }
+
+    if (option_.trace().second.trace_syscall_) {
+      auto syscall_result = SyscallTracer{}.Start(option_.trace().second.server_pid_, option_.timeout());
+      syscall_result.Print();
+    }
+  }
+
+  for (auto &i: threads) {
+    i.join();
+  }
 }
 
 void CliStarter::PrintStart() {
