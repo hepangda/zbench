@@ -6,7 +6,12 @@
 class TimeUtils {
  public:
   static clock_t Now() {
-    return clock();
+    if (CLOCKS_PER_SEC == 1000) {
+      return clock();
+    } else {
+      constexpr int level = CLOCKS_PER_SEC / 1000;
+      return clock() / level;
+    }
   }
 };
 

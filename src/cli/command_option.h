@@ -12,9 +12,11 @@ class CommandOptions {
  public:
   CommandOptions() : option_(std::make_unique<Option>()) {}
   std::pair<bool, std::unique_ptr<Option>> Parse(int argc, char **argv);
-
- private:
   void ParseDoc(const rapidjson::Document &doc);
+  std::unique_ptr<Option> GetOption() {
+    return std::move(option_);
+  }
+ private:
   void ParseDslStr(const char *str);
   void ParseDslFile(const char *filename);
 

@@ -7,11 +7,15 @@
 class SyscallResult {
  public:
   static SyscallResult FromString(const std::string &out);
-  void Print() {
-    for (auto i: entries_) {
-      printf("%lf %lf %d %d %d %s\n", i.percent_time, i.seconds, i.usec_per_call, i.calls, i.errors, i.syscall_name.c_str());
-    }
+
+  bool Empty() const {
+    return entries_.empty();
   }
+
+  const std::vector<SyscallEntry> &Entry() const {
+    return entries_;
+  }
+
  private:
   std::vector<SyscallEntry> entries_;
 };

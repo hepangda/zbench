@@ -202,91 +202,134 @@ void CommandOptions::ParseDslFile(const char *filename) {
  */
 void CommandOptions::ParseDoc(const rapidjson::Document &doc) {
   // set HTTP method
-  assert(doc["method"].IsString());
+  if (!doc.HasMember("method") || !doc["method"].IsString()) {
+    throw std::runtime_error("Parse DSL failed, when parsing \"method\".");
+  }
   option_->SetMethod(ConvertHttpMethod(doc["method"].GetString()));
 
   // set url params
-  assert(doc["params"].IsArray());
-  for (auto &var : doc["params"].GetArray()) {
-    assert(var.IsString());
-    option_->SetParam(var.GetString());
+  if (doc.HasMember("params")) {
+    if (!doc["params"].IsArray()) {
+      throw std::runtime_error("Parse DSL failed, when parsing \"params\".");
+    }
+
+    for (auto &var : doc["params"].GetArray()) {
+      if (!var.IsString()) {
+        throw std::runtime_error("Parse DSL failed, when parsing \"params item\".");
+      }
+      option_->SetParam(var.GetString());
+    }
   }
 
   // set Http headers
-  assert(doc["headers"].IsArray());
-  for (auto &var : doc["headers"].GetArray()) {
-    assert(var.IsString());
-    auto pair = detail::CutKV(var.GetString());
-    option_->SetHeader(pair.first, pair.second);
+  if (doc.HasMember("headers")) {
+    if (!doc["headers"].IsArray()) {
+      throw std::runtime_error("Parse DSL failed, when parsing \"headers\".");
+    }
+
+    for (auto &var : doc["headers"].GetArray()) {
+      if (!var.IsString()) {
+        throw std::runtime_error("Parse DSL failed, when parsing \"headers item\".");
+      }
+      auto pair = detail::CutKV(var.GetString());
+      option_->SetHeader(pair.first, pair.second);
+    }
   }
 
   // set HTTP/HTTPS
-  assert(doc["protocol"].IsString());
-  if (doc["protocol"] == "http") {
-    option_->SetProtocol(Protocol::kPHttp);
+  if (doc.HasMember("protocol")) {
+    if (!doc["protocol"].IsString()) {
+      throw std::runtime_error("Parse DSL failed, when parsing \"protocol\".");
+    }
+
+    if (strcmp(doc["protocol"].GetString(), "http") == 0) {
+      option_->SetProtocol(Protocol::kPHttp);
+    } else if (strcmp(doc["protocol"].GetString(), "https") == 0) {
+      option_->SetProtocol(Protocol::kPHttps);
+    } else {
+      throw std::runtime_error("Unsupported protocol.");
+    }
   } else {
-    option_->SetProtocol(Protocol::kPHttps);
+    option_->SetProtocol(Protocol::kPHttp);
   }
 
   // set version
-  assert(doc["version"].IsDouble());
-  switch (doc["version"].GetInt()) {
-    case 0:
+  if (doc.HasMember("version")) {
+    if (!doc["version"].IsString()) {
+      throw std::runtime_error("Parse DSL failed, when parsing \"version\".");
+    }
+
+    if (strcmp(doc["version"].GetString(), "1.0") == 0) {
       option_->SetVersion(HttpVersion::kHV1_0);
-      break;
-    case 1:
+    } else if (strcmp(doc["protocol"].GetString(), "1.1") == 0) {
       option_->SetVersion(HttpVersion::kHV1_1);
-      break;
-    default:
-      break;
+    } else {
+      throw std::runtime_error("Unsupported version.");
+    }
+  } else {
+    option_->SetVersion(HttpVersion::kHV1_0);
   }
 
   // set url
-  assert(doc["url"].IsString());
+  if (!doc.HasMember("url") || !doc["url"].IsString()) {
+    throw std::runtime_error("Parse DSL failed, when parsing \"url\".");
+  }
   option_->SetUrl(doc["url"].GetString());
 
   // set entity
-  assert(doc["entity"].IsString());
-  option_->SetEntity(doc["entity"].GetString());
+  if (doc.HasMember("entity")) {
+    if (doc["entity"].IsString()) {
+      option_->SetEntity(doc["entity"].GetString());
+    } else {
+      throw std::runtime_error("Parse DSL failed, when parsing \"entity\".");
+    }
+  }
 
   // set timeout
-  assert(doc["timeout"].IsInt());
+  if (!doc.HasMember("timeout") || !doc["timeout"].IsInt()) {
+    throw std::runtime_error("Parse DSL failed, when parsing \"timeout\".");
+  }
   option_->SetTimeout(doc["timeout"].GetInt());
 
   // set concurrency
-  assert(doc["concurrency"].IsObject());
+  if (!doc.HasMember("concurrency") || !doc["concurrency"].IsObject()) {
+    throw std::runtime_error("Parse DSL failed, when parsing \"concurrency\".");
+  }
   auto con_doc = doc["concurrency"].GetObject();
-  assert(con_doc["mode"].IsString());
+  if (!con_doc.HasMember("mode") || !con_doc["mode"].IsString()) {
+    throw std::runtime_error("Parse DSL failed, when parsing \"mode\".");
+  }
 
   if (strcmp(con_doc["mode"].GetString(), "auto") == 0) {
-    assert(con_doc["autoclients"].IsInt());
-    option_->SetAutoClients(con_doc["autoclinets"].GetInt());
-  } else {
-    assert(con_doc["threads"].IsInt());
-    assert(con_doc["clients"].IsInt());
+    if (!con_doc.HasMember("autoclients") || !con_doc["autoclients"].IsInt()) {
+      throw std::runtime_error("Parse DSL failed, when parsing \"autoclients\".");
+    }
+    option_->SetAutoClients(con_doc["autoclients"].GetInt());
+  } else if (strcmp(con_doc["mode"].GetString(), "explicit") == 0) {
+    if (!con_doc["clients"].IsInt() || !con_doc["threads"].IsInt()) {
+      throw std::runtime_error("Parse DSL failed, when parsing \"autoclients\".");
+    }
     option_->SetThreads(con_doc["threads"].GetInt());
     option_->SetClients(con_doc["clients"].GetInt());
+  } else {
+    option_->SetThreads(1);
+    option_->SetClients(1);
   }
 
   // set trace
-  assert(doc["trace"].IsObject());
-  auto trace_doc = doc["trace"].GetObject();
-  assert(trace_doc["enabled"].IsBool());
+  if (doc.HasMember("trace") && doc["trace"].IsObject()) {
+    auto trace_doc = doc["trace"].GetObject();
+    if (!trace_doc.HasMember("enabled") || !trace_doc["enabled"].IsBool()) {
+      throw std::runtime_error("Parse DSL failed, when parsing \"enabled\".");
+    }
 
-  if (trace_doc["enabled"].GetBool()) {
-    assert(trace_doc["serverpid"].IsInt());
-    assert(trace_doc["syscall"].IsBool());
-    assert(trace_doc["memory"].IsBool());
-    assert(trace_doc["cpu"].IsBool());
-
-    option_->SetTrace(true, {trace_doc["serverpid"].GetInt(),
-        trace_doc["syscall"].GetBool(),
-        trace_doc["memory"].GetBool(),
-        trace_doc["cpu"].GetBool()});
-  } else {
-    option_->SetTrace(false, HttpTrace{});
+    if (trace_doc["enabled"].GetBool()) {
+      option_->SetTrace(true, {trace_doc["serverpid"].GetInt(), trace_doc["syscall"].GetBool(),
+          trace_doc["memory"].GetBool(), trace_doc["cpu"].GetBool()});
+    } else {
+      option_->SetTrace(false, HttpTrace{});
+    }
   }
-
 }
 
 HttpMethod CommandOptions::ConvertHttpMethod(const std::string &method_string) {

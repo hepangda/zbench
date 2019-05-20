@@ -5,6 +5,7 @@
 #include "syscall_tracer.h"
 #include "trace_result.h"
 #include "tracer.h"
+#include "cli_printer.h"
 
 #include <mutex>
 #include <vector>
@@ -13,18 +14,22 @@
 void CliStarter::Start() {
   PrintStart();
 
-  puts("Producing Http Request...");
-  HttpRequest request = GetHttpRequest();
-
   puts("Searching endpoint...");
   ni::tcp::endpoint ep = GetEndpoint();
 
   puts("\n===================\nPress Enter to start...");
   std::getchar();
 
+  puts(GetPrinter().c_str());
+}
+
+std::string CliStarter::GetPrinter() {
+  HttpRequest request = GetHttpRequest();
+  ni::tcp::endpoint ep = GetEndpoint();
+
   std::vector<std::thread> threads;
-  std::list<TraceResult> trace_result;
-  std::vector<BenchResult> bench_result;
+
+  std::list<ClientReport> bench_result;
   std::mutex mutex;
 
   for (int i = 0; i < option_.threads(); i++) {
@@ -32,11 +37,13 @@ void CliStarter::Start() {
       auto result = Benchmarker{request, ep, option_}.Start();
       {
         std::lock_guard<std::mutex> guard{mutex};
-        bench_result.emplace_back(result);
+        bench_result.insert(bench_result.end(), result.begin(), result.end());
       }
     });
   }
 
+  std::list<TraceResult> trace_result;
+  SyscallResult syscall_result;
   if (option_.trace().first) {
     if (option_.trace().second.trace_cpu_) {
       threads.emplace_back([this, &trace_result] {
@@ -49,14 +56,15 @@ void CliStarter::Start() {
     }
 
     if (option_.trace().second.trace_syscall_) {
-      auto syscall_result = SyscallTracer{}.Start(option_.trace().second.server_pid_, option_.timeout());
-      syscall_result.Print();
+      syscall_result = SyscallTracer{}.Start(option_.trace().second.server_pid_, option_.timeout());
     }
   }
 
   for (auto &i: threads) {
     i.join();
   }
+
+  return CliPrinter{bench_result, trace_result, syscall_result, option_}.Print();
 }
 
 void CliStarter::PrintStart() {
@@ -140,8 +148,6 @@ ni::tcp::endpoint CliStarter::GetEndpoint() {
   if (iter == -1) {
     throw std::runtime_error("Invalid url.");
   }
-
-  // printf("url = %s\nport = %s\n", use_url.c_str(), port.c_str());
 
   n::io_context io_ctx;
   ni::tcp::resolver resolver(io_ctx);

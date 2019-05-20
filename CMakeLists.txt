@@ -19,4 +19,4 @@ add_executable(bishe
         ${SOURCE_CLIENT}
         ${SOURCE_CORE}
         ${SOURCE_UTILS}
-        src/utils/system_info.cc src/utils/system_info.h src/core/trace_result.h src/core/syscall_result.h src/core/syscall_entry.h src/core/syscall_result.cc src/core/tracer.cc src/core/tracer.h src/core/syscall_tracer.cc src/core/syscall_tracer.h)
+        src/utils/system_info.cc src/utils/system_info.h src/core/trace_result.h src/core/syscall_result.h src/core/syscall_entry.h src/core/syscall_result.cc src/core/tracer.cc src/core/tracer.h src/core/syscall_tracer.cc src/core/syscall_tracer.h src/core/cli_printer.cc src/core/cli_printer.h)

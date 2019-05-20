@@ -11,14 +11,11 @@ class Benchmarker {
   Benchmarker(const HttpRequest &request, const ni::tcp::endpoint &endpoint, Option &option)
       : io_ctx_(1), cs_(io_ctx_, std::move(endpoint), std::move(request)), option_(option) {}
 
-  BenchResult Start() {
-    BenchResult result;
+  std::list<ClientReport> Start() {
     cs_.Spawn(option_.protocol(), option_.clients());
-    io_ctx_.run_for(std::chrono::duration<int>{option_.timeout()});
-    cs_.PutBenchResult(result, option_.timeout());
-//    cs_.PrintResult(option_.timeout());
+    io_ctx_.run_for(std::chrono::seconds{option_.timeout()});
 
-    return result;
+    return cs_.GetResult();
   }
  private:
   n::io_context io_ctx_;

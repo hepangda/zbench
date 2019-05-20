@@ -10,6 +10,7 @@ class CliStarter {
   explicit CliStarter(Option &option) : option_(option) {}
 
   void Start();
+  std::string GetPrinter();
   void PrintStart();
   ni::tcp::endpoint GetEndpoint();
   HttpRequest GetHttpRequest();
