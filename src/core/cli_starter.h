@@ -7,7 +7,7 @@
 
 class CliStarter {
  public:
-  explicit CliStarter(Option &option) : option_(option) {}
+  explicit CliStarter(Option &option): option_(option) {}
 
   void Start();
   std::string GetPrinter();

@@ -88,7 +88,7 @@ void CliStarter::PrintStart() {
   if (!option_.entity()) {
     printf("  %s Entity: (null)\n", protocol);
   } else {
-    printf("  %s Entity: %s", protocol, option_.entity().get());
+    printf("  %s Entity: %s\n", protocol, option_.entity().get());
   }
 
   printf("  Threads: %d\n", option_.threads());
@@ -116,11 +116,10 @@ HttpRequest CliStarter::GetHttpRequest() {
     request.SetHeaderItem(i.first, i.second);
   }
 
-  auto rawptr = option_.entity().release();
-  if (rawptr != nullptr) {
-    auto ptr = MakeSharedCharArray(strlen(rawptr));
-    std::strcpy(ptr.get(), rawptr);
-    request.PutBody(ptr, strlen(rawptr));
+  if (option_.entity()) {
+    auto ptr = MakeSharedCharArray(strlen(option_.entity().get()));
+    std::strcpy(ptr.get(), option_.entity().get());
+    request.PutBody(ptr, strlen(option_.entity().get()));
   }
 
   return std::move(request);
